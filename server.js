@@ -126,6 +126,14 @@ app.post("/logout", (req, res) => {
    });
 });
 
+app.post("/change-password", async (req, res) => {
+  await editUserDetails(req.user.username, 'password', req.body.password)
+  req.logout(req.user, err => {
+     if (err) return next(err);
+     res.redirect("/");
+  });
+});
+
 
 app.post('/login', notAuthenticated, passport.authenticate('local', {
    successRedirect: '/index',
@@ -169,6 +177,21 @@ async function userExists(type, data) {
          }
       });
    });
+}
+
+async function editUserDetails(username, type, data) {
+  try {
+    console.log(username)
+     let query = "UPDATE users SET "+type+"=? WHERE username=?"
+     connection.query(query, [data, username], (e) => {
+        if (e) {
+           return console.error(e);
+        }
+        console.log('details updated for user '+username+ ': '+type+' updated to '+data)
+     });
+  } catch (e) {
+     console.log(e);
+  }
 }
 
 passport.serializeUser(function (user, done) {
