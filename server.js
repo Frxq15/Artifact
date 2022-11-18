@@ -9,6 +9,7 @@ var session = require('express-session');
 const bodyParser = require("body-parser");
 var passport = require('passport');
 var LocalStrategy = require('passport-local');
+const methodOverride = require('method-override')
 
 initialize()
 app.use(express.static('public'));
@@ -78,6 +79,12 @@ app.get('/register', (req, res) => {
   app.get('/user-found', (req, res) => {
     res.render('user-found.ejs')
   })
+  app.post("/logout", (req, res) => {
+    req.logout(req.user, err => {
+      if(err) return next(err);
+      res.redirect("/");
+    });
+  });
 
   app.post('/login', passport.authenticate('local', {
     successRedirect: '/index',
