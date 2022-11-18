@@ -50,13 +50,14 @@ try {
 })
 
 passport.use(new LocalStrategy(function verify(username, password, cb) {
-  connection.query('SELECT * FROM users WHERE username = ?', [ username ], function(err, user) {
+  connection.query('SELECT * FROM users WHERE username = ?', [ username ], function(err, results) {
     if (err) { return cb(err); }
-    if (!user) { return cb(null, false, { message: 'Incorrect username or password.' }); }
+    if (!results) { return cb(null, false, { message: 'Incorrect username or password.' }); }
 
-      if (password !== user[0].password) {
+      if (password !== results[0].password) {
         return cb(null, false, { message: 'Incorrect username or password.' });
       }
+      user={id:results[0].id,email:results[0].email,username:results[0].username,password:results[0].password};
       return cb(null, user);
   });
 }));
@@ -71,12 +72,15 @@ app.get('/register', (req, res) => {
   app.get('/login', (req, res) => {
     res.render('login.ejs')
   })
+  app.get('/index', (req, res) => {
+    res.render('index.ejs', { name: req.user.username })
+  })
   app.get('/user-found', (req, res) => {
     res.render('user-found.ejs')
   })
 
   app.post('/login', passport.authenticate('local', {
-    successRedirect: '/',
+    successRedirect: '/index',
     failureRedirect: '/login',
   }))
 
@@ -124,9 +128,10 @@ passport.serializeUser(function(user, done) {
   done(null, user.id);
 });
 
-passport.deserializeUser(function(id, done) {
-  User.findById(id, function(err, user) {
-    done(err, user);
+passport.deserializeUser(function(user,done){
+  console.log(user);
+  connection.query('SELECT * FROM users where id = ?',[user], function(error, results) {
+          done(null, results[0]);    
   });
 });
 
