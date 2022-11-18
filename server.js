@@ -56,6 +56,7 @@ app.get('/register', (req, res) => {
     const usernameExists = await userExists('username', req.body.username);
 
     console.log(emailExists)
+    console.log(usernameExists)
 
     if(emailExists || usernameExists) {
       console.log('user already exists')
@@ -80,14 +81,13 @@ async function userExists(type, data) {
   return new Promise((resolve, reject) => {
       let query = "SELECT "+type+" FROM users WHERE "+type+"=?"
       connection.query(query, [ data ], (e, results) => {
-        console.log(results)
-          if (e) {
-            console.log('failed')
+          if (results.length < 1) {
               console.log(e)
+              resolve(false)
 
-          }
-          console.log('passed')
+          } else {
           resolve(true);
+          }
       });
   });
 }
