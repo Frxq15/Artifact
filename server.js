@@ -94,6 +94,7 @@ app.get('/register', notAuthenticated, (req, res) => {
     });
   });
 
+
   app.post('/login', notAuthenticated, passport.authenticate('local', {
     successRedirect: '/index',
     failureRedirect: '/login',

@@ -1,9 +1,16 @@
 .center {
     max-width: 1000px;
     text-align: center;
-    padding-top: 200px;
+    padding-top: 150px;
     margin: auto;
-    height: 1000px;
+    height: 900px;
+  }
+  .center2 {
+    max-width: 1000px;
+    text-align: center;
+    padding-top: 20px;
+    margin: auto;
+    height: 10px;
   }
   .element {
     position: absolute;
