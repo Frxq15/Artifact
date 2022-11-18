@@ -48,6 +48,9 @@ app.get('/register', (req, res) => {
   app.get('/login', (req, res) => {
     res.render('login.ejs')
   })
+  app.get('/user-found', (req, res) => {
+    res.render('user-found.ejs')
+  })
 
   app.post('/register', async (req,res,next)=>{
     var currentTime = new Date();
@@ -59,7 +62,7 @@ app.get('/register', (req, res) => {
     console.log(usernameExists)
 
     if(emailExists || usernameExists) {
-      console.log('user already exists')
+      res.redirect('/user-found')
       return;
     }
 
@@ -84,7 +87,6 @@ async function userExists(type, data) {
           if (results.length < 1) {
               console.log(e)
               resolve(false)
-
           } else {
           resolve(true);
           }
