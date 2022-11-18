@@ -1,9 +1,9 @@
 .center {
-    max-width: 500px;
+    max-width: 1000px;
+    text-align: center;
+    padding-top: 200px;
     margin: auto;
-    background: rgb(219, 218, 218);
-    padding-top: 10px;
-    padding: 10px;
+    height: 1000px;
   }
   .element {
     position: absolute;

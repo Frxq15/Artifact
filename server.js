@@ -58,23 +58,31 @@ passport.use(new LocalStrategy(function verify(username, password, cb) {
       if (password !== results[0].password) {
         return cb(null, false, { message: 'Incorrect username or password.' });
       }
-      user={id:results[0].id,email:results[0].email,username:results[0].username,password:results[0].password};
+      user={id:results[0].id,email:results[0].email,username:results[0].username,password:results[0].password,second_auth:results[0].second_auth,registered:results[0].registered};
       return cb(null, user);
   });
 }));
 
 
-app.get('/', (req, res) => {
+app.get('/', notAuthenticated, (req, res) => {
     res.render('login.ejs', { ip: ip.address()})
 });
-app.get('/register', (req, res) => {
+app.get('/register', notAuthenticated, (req, res) => {
     res.render('register.ejs')
   })
-  app.get('/login', (req, res) => {
+  app.get('/login', notAuthenticated, (req, res) => {
     res.render('login.ejs')
   })
-  app.get('/index', (req, res) => {
-    res.render('index.ejs', { name: req.user.username })
+  app.get('/index', isAuthenticated, (req, res) => {
+    var dateFormat = new Date(req.user.registered);
+    var formatted = dateFormat.toLocaleDateString("en-US");
+    var SA = "false";
+    if(req.user.second_auth) {
+      SA = "Enabled";
+    } else {
+      SA = "Disabled";
+    }
+    res.render('index.ejs', { name: req.user.username, email: req.user.email, password: req.user.password, second_auth: SA, registered: formatted})
   })
   app.get('/user-found', (req, res) => {
     res.render('user-found.ejs')
@@ -86,7 +94,7 @@ app.get('/register', (req, res) => {
     });
   });
 
-  app.post('/login', passport.authenticate('local', {
+  app.post('/login', notAuthenticated, passport.authenticate('local', {
     successRedirect: '/index',
     failureRedirect: '/login',
   }))
@@ -141,6 +149,19 @@ passport.deserializeUser(function(user,done){
           done(null, results[0]);    
   });
 });
+
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next()
+  }
+  res.redirect('/login')
+}
+function notAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return res.redirect('/index')
+  }
+  next()
+}
 
 function initialize() {
     let port = 5000;
