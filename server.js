@@ -7,6 +7,8 @@ const app = express();
 const mysql = require('mysql');
 var session = require('express-session');
 const bodyParser = require("body-parser");
+var passport = require('passport');
+var LocalStrategy = require('passport-local');
 
 initialize()
 app.use(express.static('public'));
@@ -15,6 +17,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
   extended: true
 }));
+app.use(express.urlencoded({ extended: false }))
+app.use(flash())
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false
+}))
+app.use(passport.initialize())
+app.use(passport.session())
 
 const connection = mysql.createConnection({
   host: process.env.SQL_HOST,
@@ -38,6 +49,18 @@ try {
 }
 })
 
+passport.use(new LocalStrategy(function verify(username, password, cb) {
+  connection.query('SELECT * FROM users WHERE username = ?', [ username ], function(err, user) {
+    if (err) { return cb(err); }
+    if (!user) { return cb(null, false, { message: 'Incorrect username or password.' }); }
+
+      if (password !== user[0].password) {
+        return cb(null, false, { message: 'Incorrect username or password.' });
+      }
+      return cb(null, user);
+  });
+}));
+
 
 app.get('/', (req, res) => {
     res.render('login.ejs', { ip: ip.address()})
@@ -52,14 +75,16 @@ app.get('/register', (req, res) => {
     res.render('user-found.ejs')
   })
 
+  app.post('/login', passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/login',
+  }))
+
   app.post('/register', async (req,res,next)=>{
     var currentTime = new Date();
 
     const emailExists = await userExists('email', req.body.email);
     const usernameExists = await userExists('username', req.body.username);
-
-    console.log(emailExists)
-    console.log(usernameExists)
 
     if(emailExists || usernameExists) {
       res.redirect('/user-found')
@@ -94,7 +119,16 @@ async function userExists(type, data) {
   });
 }
 
+passport.serializeUser(function(user, done) {
+  console.log('user :'+user + " id: " + user.id)
+  done(null, user.id);
+});
 
+passport.deserializeUser(function(id, done) {
+  User.findById(id, function(err, user) {
+    done(err, user);
+  });
+});
 
 function initialize() {
     let port = 5000;
