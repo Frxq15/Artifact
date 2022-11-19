@@ -18,7 +18,7 @@
     left: 50%;
     width: 200px;
     height: 200px;
-    margin: -100px 0 0 -100px;
+    margin: -200px 0 0 -100px;
   }
 .black {
     color: black;
@@ -47,13 +47,9 @@
     background-size: cover;
     background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxleHBsb3JlLWZlZWR8MXx8fGVufDB8fHx8&w=1000&q=80');
 }
-input:invalid { 
-  border:solid rgb(255, 85, 85);
-  border-width: 2px;
-  }
   input:valid { 
-    border:solid black;
-    border-width: 2px;
+    border:solid green;
+    border-width: 1px;
     }
 .card {
   width: 225px;

@@ -10,10 +10,12 @@ const bodyParser = require("body-parser");
 var passport = require('passport');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
+var requestIp = require('request-ip');
 
 initialize()
-app.use(express.static('public'));
+app.use(express.static(__dirname+'/public'));
 app.set("view engine", "ejs");
+app.set('trust proxy', true)
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
    extended: true
@@ -113,7 +115,8 @@ app.get('/index', isAuthenticated, (req, res) => {
       email: req.user.email,
       password: req.user.password,
       second_auth: SA,
-      registered: formatted
+      registered: formatted,
+      ip: requestIp.getClientIp(req)
    })
 })
 app.get('/user-found', (req, res) => {
