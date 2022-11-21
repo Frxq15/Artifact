@@ -18,7 +18,7 @@
 <h5>2FA Status: <%= second_auth %></h5>
 <hr style="width: 350px;">
 <h5>Change your password: </h5>
-<form action="/change-password?_method=DELETE" method="POST">
+<form action="/change-password" method="POST">
     <div>
         <input type="password" id="password" name="password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" 
         title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters"  placeholder="********" required>

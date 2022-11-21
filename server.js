@@ -8,6 +8,8 @@ const mysql = require('mysql');
 var session = require('express-session');
 const bodyParser = require("body-parser");
 var passport = require('passport');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
@@ -43,7 +45,7 @@ connection.connect(function (error) {
    if (error) throw error
    else console.log("Connection successfull")
    try {
-      let query = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(32) UNIQUE, username VARCHAR(16) UNIQUE, password CHAR(60), registered DATE, last_login TIME, second_auth BOOL);"
+      let query = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(32) UNIQUE, username VARCHAR(16) UNIQUE, hash VARCHAR(256), salt VARCHAR(256), registered DATE, last_login TIME, last_login_ip VARCHAR(32), second_auth BOOL, admin BOOL);"
       connection.query(query, (e) => {
          if (e) {
             return console.error(e);
@@ -56,13 +58,12 @@ connection.connect(function (error) {
 
 passport.use(new LocalStrategy (async function verify(username, password, cb) {
   const usernameExists = await userExists('username', username);
-
   if (!usernameExists) {
     return cb(null, false, {
        message: 'Incorrect username or password.'
     });
  }
-   connection.query('SELECT * FROM users WHERE username = ?', [username], function (err, results) {
+   connection.query('SELECT * FROM users WHERE username = ?', [username], async function (err, results) {
       if (err) {
          return cb(err);
       }
@@ -71,8 +72,9 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
             message: 'Incorrect username or password.'
          });
       }
-
-      if (password !== results[0].password) {
+      const valid = await validPassword(password, results[0].hash, results[0].salt)
+      console.log(valid)
+      if (!valid) {
          return cb(null, false, {
             message: 'Incorrect username or password.'
          });
@@ -83,7 +85,8 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
          username: results[0].username,
          password: results[0].password,
          second_auth: results[0].second_auth,
-         registered: results[0].registered
+         registered: results[0].registered,
+         admin: results[0].admin
       };
       return cb(null, user);
    });
@@ -113,7 +116,6 @@ app.get('/index', isAuthenticated, (req, res) => {
    res.render('index.ejs', {
       name: req.user.username,
       email: req.user.email,
-      password: req.user.password,
       second_auth: SA,
       registered: formatted,
       ip: requestIp.getClientIp(req)
@@ -130,7 +132,9 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/change-password", async (req, res) => {
-  await editUserDetails(req.user.username, 'password', req.body.password)
+   const hashedPassword = await genPassword(req.body.password);
+  await editUserDetails(req.user.username, 'hash', hashedPassword.hash)
+  await editUserDetails(req.user.username, 'salt', hashedPassword.salt)
   req.logout(req.user, err => {
      if (err) return next(err);
      res.redirect("/");
@@ -153,10 +157,10 @@ app.post('/register', async (req, res, next) => {
       res.redirect('/user-found')
       return;
    }
-
-   let query = `INSERT into users (email, username, password, registered, last_login, last_login_ip, second_auth) VALUES (?, ?, ?, ?, ?, ?, ?);`
+   const password = await genPassword(req.body.password);
+   let query = `INSERT into users (email, username, hash, salt, registered, last_login, last_login_ip, second_auth, admin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
    try {
-      connection.query(query, [req.body.email, req.body.username, req.body.password, currentTime, null, 0, 0]), (e) => {
+      connection.query(query, [req.body.email, req.body.username, password.hash, password.salt, currentTime, null, requestIp.getClientIp(req), 0,0]), (e) => {
          if (e) throw e
          console.log(e)
       }
@@ -221,6 +225,19 @@ function notAuthenticated(req, res, next) {
       return res.redirect('/index')
    }
    next()
+}
+
+async function validPassword(password,hash,salt)
+{
+    var hashVerify = await crypto.pbkdf2Sync(password,salt,10000,60,'sha512').toString('hex');
+    return hash === hashVerify;
+}
+async function genPassword(password)
+{
+    var salt=crypto.randomBytes(32).toString('hex');
+    var genhash = crypto.pbkdf2Sync(password,salt,10000,60,'sha512').toString('hex');
+
+    return {salt:salt,hash:genhash};
 }
 
 function initialize() {
