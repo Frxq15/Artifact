@@ -13,12 +13,14 @@ const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
+var messagebird = require('messagebird');
 
 initialize()
 app.use(express.static(__dirname+'/public'));
 app.set("view engine", "ejs");
 app.set('trust proxy', true)
 app.use(bodyParser.json());
+app.use(flash())
 app.use(bodyParser.urlencoded({
    extended: true
 }));
@@ -45,7 +47,7 @@ connection.connect(function (error) {
    if (error) throw error
    else console.log("Connection successfull")
    try {
-      let query = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(32) UNIQUE, username VARCHAR(16) UNIQUE, hash VARCHAR(256), salt VARCHAR(256), registered DATE, last_login TIME, last_login_ip VARCHAR(32), second_auth BOOL, admin BOOL);"
+      let query = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(32) UNIQUE, username VARCHAR(16) UNIQUE, hash VARCHAR(256), salt VARCHAR(256), registered DATE, last_login TIME, last_login_ip VARCHAR(32), second_auth BOOL, second_auth_confirmed BOOL, admin BOOL);"
       connection.query(query, (e) => {
          if (e) {
             return console.error(e);
@@ -60,7 +62,8 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
   const usernameExists = await userExists('username', username);
   if (!usernameExists) {
     return cb(null, false, {
-       message: 'Incorrect username or password.'
+       failureFlash: true,
+       failureFlash: 'Incorrect username or password.'
     });
  }
    connection.query('SELECT * FROM users WHERE username = ?', [username], async function (err, results) {
@@ -69,7 +72,8 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
       }
       if (!results) {
          return cb(null, false, {
-            message: 'Incorrect username or password.'
+            failureFlash: true,
+            failureFlash: 'Incorrect username or password.'
          });
       }
       const valid = await validPassword(password, results[0].hash, results[0].salt)
@@ -86,7 +90,9 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
          password: results[0].password,
          second_auth: results[0].second_auth,
          registered: results[0].registered,
-         admin: results[0].admin
+         last_login_ip: results[0].last_login_ip,
+         admin: results[0].admin,
+         second_auth_confirmed: results[0].second_auth_confirmed
       };
       return cb(null, user);
    });
@@ -104,6 +110,12 @@ app.get('/register', notAuthenticated, (req, res) => {
 app.get('/login', notAuthenticated, (req, res) => {
    res.render('login.ejs')
 })
+app.get('/user-confirm', isAuthenticated, (req, res) => {
+   res.render('user-confirm.ejs', {
+      name: req.user.username,
+      email: req.user.email
+   })
+})
 app.get('/index', isAuthenticated, (req, res) => {
    var dateFormat = new Date(req.user.registered);
    var formatted = dateFormat.toLocaleDateString("en-US");
@@ -112,6 +124,15 @@ app.get('/index', isAuthenticated, (req, res) => {
       SA = "Enabled";
    } else {
       SA = "Disabled";
+   }
+   console.log('second auth: '+req.user.second_auth)
+   console.log('second auth confirmed: '+req.user.second_auth_confirmed)
+   if(req.user.second_auth) {
+      if(!req.user.second_auth_confirmed) {
+         console.log('second auth not confirmed: '+req.user.second_auth)
+      res.redirect('/user-confirm')
+      return;
+      }
    }
    res.render('index.ejs', {
       name: req.user.username,
@@ -124,6 +145,12 @@ app.get('/index', isAuthenticated, (req, res) => {
 app.get('/user-found', (req, res) => {
    res.render('user-found.ejs')
 })
+app.post('/user-confirm', isAuthenticated, secondAuthConfirmed, async (req, res) => {
+   console.log('user-confirm posted for: ', req.user.username)
+   await editUserDetails(req.user.username, 'second_auth_confirmed', true)
+   res.redirect('/index')
+   console.log('redirected to /index')
+})
 app.post("/logout", (req, res) => {
    req.logout(req.user, err => {
       if (err) return next(err);
@@ -133,8 +160,8 @@ app.post("/logout", (req, res) => {
 
 app.post("/change-password", async (req, res) => {
    const hashedPassword = await genPassword(req.body.password);
-  await editUserDetails(req.user.username, 'hash', hashedPassword.hash)
-  await editUserDetails(req.user.username, 'salt', hashedPassword.salt)
+   await editUserDetails(req.user.username, 'hash', hashedPassword.hash)
+   await editUserDetails(req.user.username, 'salt', hashedPassword.salt)
   req.logout(req.user, err => {
      if (err) return next(err);
      res.redirect("/");
@@ -145,6 +172,7 @@ app.post("/change-password", async (req, res) => {
 app.post('/login', notAuthenticated, passport.authenticate('local', {
    successRedirect: '/index',
    failureRedirect: '/login',
+   failureFlash: true
 }))
 
 app.post('/register', async (req, res, next) => {
@@ -158,9 +186,9 @@ app.post('/register', async (req, res, next) => {
       return;
    }
    const password = await genPassword(req.body.password);
-   let query = `INSERT into users (email, username, hash, salt, registered, last_login, last_login_ip, second_auth, admin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
+   let query = `INSERT into users (email, username, hash, salt, registered, last_login, last_login_ip, second_auth, second_auth_confirmed, admin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?);`
    try {
-      connection.query(query, [req.body.email, req.body.username, password.hash, password.salt, currentTime, null, requestIp.getClientIp(req), 0,0]), (e) => {
+      connection.query(query, [req.body.email, req.body.username, password.hash, password.salt, currentTime, null, requestIp.getClientIp(req), 0, 0, 0]), (e) => {
          if (e) throw e
          console.log(e)
       }
@@ -218,6 +246,12 @@ function isAuthenticated(req, res, next) {
       return next()
    }
    res.redirect('/login')
+}
+function secondAuthConfirmed(req, res, next) {
+   if (!req.user.second_auth_confirmed) {
+      return next()
+   }
+   res.redirect('/')
 }
 
 function notAuthenticated(req, res, next) {

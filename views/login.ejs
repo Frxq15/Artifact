@@ -4,6 +4,9 @@
 <body class="background">
    <div class="element">
       <h1 style="text-align: center; color: white;">Sign In</h1>
+      <%if (messages.error) { %>
+         <% messages.error %>
+         <% } %>
       <hr class="black">
       <div class="card" style="height: 265px;">
       <form action="/login" method="POST">
