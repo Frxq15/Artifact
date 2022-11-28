@@ -8,12 +8,12 @@ const mysql = require('mysql');
 var session = require('express-session');
 const bodyParser = require("body-parser");
 var passport = require('passport');
-const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
 var messagebird = require('messagebird');
+var alert = require('alert');
 
 initialize()
 app.use(express.static(__dirname+'/public'));
@@ -24,6 +24,7 @@ app.use(flash())
 app.use(bodyParser.urlencoded({
    extended: true
 }));
+app.use(methodOverride('X-HTTP-Method-Override'))
 app.use(express.urlencoded({
    extended: false
 }))
