@@ -105,6 +105,9 @@ app.get('/', notAuthenticated, (req, res) => {
       ip: ip.address()
    })
 });
+app.get('/page-not-found', (req, res) => {
+   res.render('page-not-found.ejs')
+})
 app.get('/register', notAuthenticated, (req, res) => {
    res.render('register.ejs')
 })
@@ -143,7 +146,7 @@ app.get('/index', isAuthenticated, (req, res) => {
       ip: requestIp.getClientIp(req)
    })
 })
-app.get('/user-found', (req, res) => {
+app.get('/user-found', notAuthenticated, (req, res) => {
    res.render('user-found.ejs')
 })
 app.post('/user-confirm', isAuthenticated, secondAuthConfirmed, async (req, res) => {
@@ -274,6 +277,10 @@ async function genPassword(password)
 
     return {salt:salt,hash:genhash};
 }
+
+app.get('*', function(req, res){
+   res.status(404).render('page-not-found.ejs');
+ });
 
 function initialize() {
    let port = 5000;
