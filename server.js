@@ -114,7 +114,7 @@ app.get('/register', notAuthenticated, (req, res) => {
 app.get('/login', notAuthenticated, (req, res) => {
    res.render('login.ejs')
 })
-app.get('/user-confirm', isAuthenticated, (req, res) => {
+app.get('/user-confirm', isAuthenticated, secondAuthConfirmed, (req, res) => {
    res.render('user-confirm.ejs', {
       name: req.user.username,
       email: req.user.email
@@ -155,7 +155,8 @@ app.post('/user-confirm', isAuthenticated, secondAuthConfirmed, async (req, res)
    res.redirect('/index')
    console.log('redirected to /index')
 })
-app.post("/logout", (req, res) => {
+app.post("/logout", async (req, res) => {
+   await editUserDetails(req.user.username, 'second_auth_confirmed', false)
    req.logout(req.user, err => {
       if (err) return next(err);
       res.redirect("/");
