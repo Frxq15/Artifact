@@ -6,14 +6,24 @@ const ip = require('ip');
 const app = express();
 const mysql = require('mysql');
 var session = require('express-session');
+const nodemailer = require('nodemailer');
 const bodyParser = require("body-parser");
 var passport = require('passport');
 const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
-var messagebird = require('messagebird');
+var messagebird = require('messagebird')(process.env.MESSAGE_BIRD_API_KEY)
 var alert = require('alert');
+var expresshbs = require('express-handlebars');
+
+const transporter = nodemailer.createTransport({
+   service: 'Gmail',
+   auth: {
+     user: process.env.GMAIL_EMAIL,
+     pass: process.env.GMAIL_PASS
+   }
+ });
 
 initialize()
 app.use(express.static(__dirname+'/public'));
@@ -119,11 +129,18 @@ app.get('/user-confirm', isAuthenticated, secondAuthConfirmed, (req, res) => {
       name: req.user.username,
       email: req.user.email
    })
+   transporter.sendMail(send2fa(req.user.email), function(error, info){
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
 })
 app.get('/index', isAuthenticated, (req, res) => {
    var dateFormat = new Date(req.user.registered);
    var formatted = dateFormat.toLocaleDateString("en-US");
-   var SA = "false";
+   var SA = "false"; 
    if (req.user.second_auth) {
       SA = "Enabled";
    } else {
@@ -148,6 +165,9 @@ app.get('/index', isAuthenticated, (req, res) => {
 })
 app.get('/user-found', notAuthenticated, (req, res) => {
    res.render('user-found.ejs')
+})
+app.get('/user-not-found', notAuthenticated, (req, res) => {
+   res.render('user-not-found.ejs')
 })
 app.post('/user-confirm', isAuthenticated, secondAuthConfirmed, async (req, res) => {
    console.log('user-confirm posted for: ', req.user.username)
@@ -176,7 +196,7 @@ app.post("/change-password", async (req, res) => {
 
 app.post('/login', notAuthenticated, passport.authenticate('local', {
    successRedirect: '/index',
-   failureRedirect: '/login',
+   failureRedirect: '/user-not-found',
    failureFlash: true
 }))
 
@@ -282,6 +302,15 @@ async function genPassword(password)
 app.get('*', function(req, res){
    res.status(404).render('page-not-found.ejs');
  });
+
+ function send2fa(email) {
+ return mailOptions = {
+   from: 'cxrtwrightdan15@gmail.com',
+   to: email,
+   subject: 'Your 2FA code',
+   text: `Your 2FA code is: 200`
+ };
+}
 
 function initialize() {
    let port = 5000;

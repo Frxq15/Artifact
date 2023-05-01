@@ -13,7 +13,7 @@
          <% messages.error %>
          <% } %>
       <hr class="black" style="width: 225px;">
-      <div class="card" style="height: 265px;">
+      <div class="card" style="height: 285px;">
       <form action="/user-confirm" method="POST">
          <div style="text-align: center; margin: 0;">
             <h4>Confirm Code</h4>
@@ -24,7 +24,8 @@
          <hr class="black">
          <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Confirm Code</button>
          <p style="padding-top: 10px;">We've sent a code to</p>
-         <p><i class="fa fa-phone"></i> <%= email %></p>
+         <hr>
+         <p class="none"><i class="fa fa-envelope" style="margin: 0;"></i> <%= email %></p>
       </form>
    </div>
    </div>  
