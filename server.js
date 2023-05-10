@@ -6,6 +6,8 @@ const ip = require('ip');
 const app = express();
 const mysql = require('mysql');
 var session = require('express-session');
+const fs = require('fs');
+const json = require('json');
 const nodemailer = require('nodemailer');
 const bodyParser = require("body-parser");
 var passport = require('passport');
@@ -13,9 +15,8 @@ const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
-var messagebird = require('messagebird')(process.env.MESSAGE_BIRD_API_KEY)
-var alert = require('alert');
 var expresshbs = require('express-handlebars');
+const { create } = require('domain');
 
 const transporter = nodemailer.createTransport({
    service: 'Gmail',
@@ -55,10 +56,22 @@ const connection = mysql.createConnection({
 });
 
 connection.connect(function (error) {
-   if (error) throw error
-   else console.log("Connection successfull")
+   if (error) {
+      throw error;
+   } 
+   console.log("Connected to MySQL successfully.")
    try {
       let query = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(32) UNIQUE, username VARCHAR(16) UNIQUE, hash VARCHAR(256), salt VARCHAR(256), registered DATE, last_login TIME, last_login_ip VARCHAR(32), second_auth BOOL, second_auth_confirmed BOOL, admin BOOL);"
+      connection.query(query, (e) => {
+         if (e) {
+            return console.error(e);
+         }
+      });
+   } catch (e) {
+      console.log(e);
+   }
+   try {
+      let query = "CREATE TABLE IF NOT EXISTS logs (username VARCHAR(16), email VARCHAR(32), type VARCHAR(32), timestamp DATETIME, ip VARCHAR(32), additional_info VARCHAR(256));"
       connection.query(query, (e) => {
          if (e) {
             return console.error(e);
@@ -110,6 +123,37 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
 }));
 
 
+function getCurrentDateTime() {
+   var date = new Date();
+   var datetime = date.toISOString().slice(0, 19).replace('T', ' ');
+   return datetime;
+}
+
+async function createLog(req, type, misc) {
+   let query = `INSERT into logs (username, email, type, timestamp, ip, additional_info) VALUES (?, ?, ?, ?, ?, ?);`
+         try {
+            connection.query(query, [req.user.username, req.user.email, type, getCurrentDateTime(), requestIp.getClientIp(req), misc]), (e) => {
+               if (e) throw e;
+               console.log(e)
+            }
+         } catch (e) {
+            console.log(e)
+         }
+}
+
+async function getAllUserData(cb) {
+   connection.query('SELECT * FROM users ORDER BY id DESC', async function (err, results) {
+      if (err) {
+         return cb(err);
+      }
+         else {
+            response.render('users', {title: 'users', action: 'list', sampleData: results});
+            cb(null)
+         }
+      })
+   }
+
+
 app.get('/', notAuthenticated, (req, res) => {
    res.render('login.ejs', {
       ip: ip.address()
@@ -117,6 +161,12 @@ app.get('/', notAuthenticated, (req, res) => {
 });
 app.get('/page-not-found', (req, res) => {
    res.render('page-not-found.ejs')
+})
+app.get('/users', isAuthenticated, (req, res) => {
+   res.render('users.ejs', {
+      username: req.user.username,
+      email: req.user.email
+   })
 })
 app.get('/register', notAuthenticated, (req, res) => {
    res.render('register.ejs')
@@ -162,6 +212,7 @@ app.get('/index', isAuthenticated, (req, res) => {
       registered: formatted,
       ip: requestIp.getClientIp(req)
    })
+   createLog(req, 'USER-LOGIN', 'User logged in successfully.')
 })
 app.get('/user-found', notAuthenticated, (req, res) => {
    res.render('user-found.ejs')
@@ -187,6 +238,7 @@ app.post("/change-password", async (req, res) => {
    const hashedPassword = await genPassword(req.body.password);
    await editUserDetails(req.user.username, 'hash', hashedPassword.hash)
    await editUserDetails(req.user.username, 'salt', hashedPassword.salt)
+   createLog(req, 'PASSWORD-CHANGE', 'User changed password.')
   req.logout(req.user, err => {
      if (err) return next(err);
      res.redirect("/");
@@ -218,6 +270,7 @@ app.post('/register', async (req, res, next) => {
          console.log(e)
       }
       console.log('Created entry for User: ' + req.body.username + ' (Email: ' + req.body.email + ') successfully.');
+      createLog(req, 'USER-REGISTER', 'User account created.')
       res.redirect('/login')
    } catch (e) {
       console.log(e)
@@ -231,7 +284,7 @@ async function userExists(type, data) {
       connection.query(query, [data], (e, results) => {
          if (results.length < 1) {
             console.log(e)
-            resolve(false)
+            reject(false)
          } else {
             resolve(true);
          }

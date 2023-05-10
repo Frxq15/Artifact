@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<link rel="stylesheet" href="styles.css">
+<meta name="description" content="Artifact | 2FA">
+<title>Artifact | 2FA</title>
+<link rel="shortcut icon" type="image/jpg" href="/public/icon.png"/>
+<body class="background">
+   <p>test</p>
+   <div class="element-users">
+      <h2 style="text-align: center; margin: 0; color: white;">Admin Panel</h2>
+      <h2 style="text-align: center; margin: 0; color: white; padding-left: -50px;">Displaying All Users</h2>
+      <%if (messages.error) { %>
+         <% messages.error %>
+         <% } %>
+      <hr class="black" style="width: 650px;">
+      <div class="card" style="height: 650px; width: 750px;">
+      <form action="/user-confirm" method="POST">
+         <div style="text-align: center; margin: 0;">
+            <h4>Confirm Code</h4>
+         <div>
+            <label for="code">Enter your 2FA Code</label>
+            <input type="code" id="code" name="code" placeholder="2FA Code" required>
+         </div>
+         <hr class="black">
+         <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Confirm Code</button>
+         <p style="padding-top: 10px;">We've sent a code to</p>
+         <hr>
+         <p class="none"><i class="fa fa-envelope" style="margin: 0;"></i> <%= email %></p>
+      </form>
+   </div>
+   </div>  
+</body>

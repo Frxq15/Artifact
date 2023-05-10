@@ -28,6 +28,14 @@
     height: 200px;
     margin: -200px 0 0 -100px;
   }
+  .element-users {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    width: 850px;
+    height: 850px;
+    margin: -200px 0 0 -350px;
+  }
 .black {
     color: black;
 }
@@ -60,8 +68,14 @@
     border-width: 1px;
     }
 .card {
-  width: 225px;
+    width: 225px;
     height: 325px;
+    padding: 10px;
+    outline-color: black;
+}
+.card-users {
+    width: 725px;
+    height: 725px;
     padding: 10px;
     outline-color: black;
 }
