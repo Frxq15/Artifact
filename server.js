@@ -6,8 +6,6 @@ const ip = require('ip');
 const app = express();
 const mysql = require('mysql');
 var session = require('express-session');
-const fs = require('fs');
-const json = require('json');
 const nodemailer = require('nodemailer');
 const bodyParser = require("body-parser");
 var passport = require('passport');
@@ -15,8 +13,9 @@ const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
+var messagebird = require('messagebird')(process.env.MESSAGE_BIRD_API_KEY)
+var alert = require('alert');
 var expresshbs = require('express-handlebars');
-const { create } = require('domain');
 
 const transporter = nodemailer.createTransport({
    service: 'Gmail',
@@ -61,7 +60,7 @@ connection.connect(function (error) {
    } 
    console.log("Connected to MySQL successfully.")
    try {
-      let query = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(32) UNIQUE, username VARCHAR(16) UNIQUE, hash VARCHAR(256), salt VARCHAR(256), registered DATE, last_login TIME, last_login_ip VARCHAR(32), second_auth BOOL, second_auth_confirmed BOOL, admin BOOL);"
+      let query = "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(32) UNIQUE, username VARCHAR(16) UNIQUE, hash VARCHAR(256), salt VARCHAR(256), registered DATE, last_login TIME, last_login_ip VARCHAR(32), second_auth BOOL, second_auth_confirmed BOOL, admin BOOL, account_status VARCHAR(16));"
       connection.query(query, (e) => {
          if (e) {
             return console.error(e);
@@ -81,6 +80,36 @@ connection.connect(function (error) {
       console.log(e);
    }
 })
+
+function getCurrentDateTime() {
+   var date = new Date();
+   var datetime = date.toISOString().slice(0, 19).replace('T', ' ');
+   return datetime;
+}
+
+async function createLog(req, type, misc) {
+   let query = `INSERT into logs (username, email, type, timestamp, ip, additional_info) VALUES (?, ?, ?, ?, ?, ?);`
+         try {
+            connection.query(query, [req.user.username, req.user.email, type, getCurrentDateTime(), requestIp.getClientIp(req), misc]), (e) => {
+               if (e) throw e;
+               console.log(e)
+            }
+         } catch (e) {
+            console.log(e)
+         }
+}
+//for logging without a request handler
+async function createLog2(user, email, ip, type, misc) {
+   let query = `INSERT into logs (username, email, type, timestamp, ip, additional_info) VALUES (?, ?, ?, ?, ?, ?);`
+         try {
+            connection.query(query, [user, email, type, getCurrentDateTime(), ip, misc]), (e) => {
+               if (e) throw e;
+               console.log(e)
+            }
+         } catch (e) {
+            console.log(e)
+         }
+}
 
 passport.use(new LocalStrategy (async function verify(username, password, cb) {
   const usernameExists = await userExists('username', username);
@@ -116,42 +145,12 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
          registered: results[0].registered,
          last_login_ip: results[0].last_login_ip,
          admin: results[0].admin,
+         account_status: results[0].account_status,
          second_auth_confirmed: results[0].second_auth_confirmed
       };
       return cb(null, user);
    });
 }));
-
-
-function getCurrentDateTime() {
-   var date = new Date();
-   var datetime = date.toISOString().slice(0, 19).replace('T', ' ');
-   return datetime;
-}
-
-async function createLog(req, type, misc) {
-   let query = `INSERT into logs (username, email, type, timestamp, ip, additional_info) VALUES (?, ?, ?, ?, ?, ?);`
-         try {
-            connection.query(query, [req.user.username, req.user.email, type, getCurrentDateTime(), requestIp.getClientIp(req), misc]), (e) => {
-               if (e) throw e;
-               console.log(e)
-            }
-         } catch (e) {
-            console.log(e)
-         }
-}
-
-async function getAllUserData(cb) {
-   connection.query('SELECT * FROM users ORDER BY id DESC', async function (err, results) {
-      if (err) {
-         return cb(err);
-      }
-         else {
-            response.render('users', {title: 'users', action: 'list', sampleData: results});
-            cb(null)
-         }
-      })
-   }
 
 
 app.get('/', notAuthenticated, (req, res) => {
@@ -162,17 +161,18 @@ app.get('/', notAuthenticated, (req, res) => {
 app.get('/page-not-found', (req, res) => {
    res.render('page-not-found.ejs')
 })
-app.get('/users', isAuthenticated, (req, res) => {
-   res.render('users.ejs', {
-      username: req.user.username,
-      email: req.user.email
-   })
-})
 app.get('/register', notAuthenticated, (req, res) => {
    res.render('register.ejs')
 })
 app.get('/login', notAuthenticated, (req, res) => {
    res.render('login.ejs')
+})
+app.get('/admin', isAuthenticated, (req, res) => {
+   if(!isAdmin(req)) {
+      res.redirect('page-not-found')
+      return;
+   }
+   res.render('admin.ejs')
 })
 app.get('/user-confirm', isAuthenticated, secondAuthConfirmed, (req, res) => {
    res.render('user-confirm.ejs', {
@@ -234,11 +234,17 @@ app.post("/logout", async (req, res) => {
    });
 });
 
+function isAdmin(req) {
+   if(req.user.admin) {
+      return true;
+   }
+   return false;
+}
+
 app.post("/change-password", async (req, res) => {
    const hashedPassword = await genPassword(req.body.password);
    await editUserDetails(req.user.username, 'hash', hashedPassword.hash)
    await editUserDetails(req.user.username, 'salt', hashedPassword.salt)
-   createLog(req, 'PASSWORD-CHANGE', 'User changed password.')
   req.logout(req.user, err => {
      if (err) return next(err);
      res.redirect("/");
@@ -263,14 +269,15 @@ app.post('/register', async (req, res, next) => {
       return;
    }
    const password = await genPassword(req.body.password);
-   let query = `INSERT into users (email, username, hash, salt, registered, last_login, last_login_ip, second_auth, second_auth_confirmed, admin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?);`
+   let query = `INSERT into users (email, username, hash, salt, registered, last_login, last_login_ip, second_auth, second_auth_confirmed, admin, account_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?,?);`
    try {
-      connection.query(query, [req.body.email, req.body.username, password.hash, password.salt, currentTime, null, requestIp.getClientIp(req), 0, 0, 0]), (e) => {
+      connection.query(query, [req.body.email, req.body.username, password.hash, password.salt, currentTime, null, requestIp.getClientIp(req), 0, 0, 0, 'Registered']), (e) => {
          if (e) throw e
          console.log(e)
       }
       console.log('Created entry for User: ' + req.body.username + ' (Email: ' + req.body.email + ') successfully.');
-      createLog(req, 'USER-REGISTER', 'User account created.')
+      createLog2(req.body.username, req.body.email, requestIp.getClientIp(req), 'USER-SIGNUP', 'User created successfully.')
+      console.log('Username: ' + req.body.username)
       res.redirect('/login')
    } catch (e) {
       console.log(e)
@@ -284,7 +291,7 @@ async function userExists(type, data) {
       connection.query(query, [data], (e, results) => {
          if (results.length < 1) {
             console.log(e)
-            reject(false)
+            resolve(false)
          } else {
             resolve(true);
          }
@@ -305,6 +312,14 @@ async function editUserDetails(username, type, data) {
   } catch (e) {
      console.log(e);
   }
+  if(type.toString().toLowerCase() == 'password') {
+   createLog2(username, getUserDetails(username).email, getUserDetails(username).last_login_ip, 'USER-PASSWORD-CHANGE', 'User password changed successfully.')
+   return;
+  }
+  if(type.toString().toLowerCase() == 'second_auth_confirmed') {
+   return;
+  }
+  createLog2(username, getUserDetails(username).email, getUserDetails(username).last_login_ip, 'USER-EDIT-DETAILS', type + ' was changed to ' + data)
 }
 
 passport.serializeUser(function (user, done) {
@@ -364,6 +379,48 @@ app.get('*', function(req, res){
    text: `Your 2FA code is: 200`
  };
 }
+
+async function getUserDetails(username) {
+   return new Promise((resolve, reject) => {
+       connection.query('SELECT * FROM users WHERE username = ?', [username], async function (err, results) {
+          if (err) {
+             reject(err)
+          }
+          if (!results) {
+             return reject(err)
+          }
+          user = {
+            id: results[0].id,
+            email: results[0].email,
+            username: results[0].username,
+            password: results[0].password,
+            second_auth: results[0].second_auth,
+            registered: results[0].registered,
+            last_login_ip: results[0].last_login_ip,
+            admin: results[0].admin,
+            second_auth_confirmed: results[0].second_auth_confirmed
+         };
+         resolve(user)
+            })
+          });
+         }
+
+
+      async function userExists(type, data) {
+         return new Promise((resolve, reject) => {
+            let query = "SELECT " + type + " FROM users WHERE " + type + "=?"
+            connection.query(query, [data], (e, results) => {
+               if (results.length < 1) {
+                  console.log(e)
+                  resolve(false)
+               } else {
+                  resolve(true);
+               }
+            });
+         });
+      }
+   
+
 
 function initialize() {
    let port = 5000;
