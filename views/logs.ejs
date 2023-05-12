@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<link rel="stylesheet" href="styles.css">
+<meta name="description" content="Artifact | 2FA">
+<title>Artifact | Logs</title>
+<link rel="shortcut icon" type="image/jpg" href="/public/icon.png"/>
+<body class="background">
+   <div class="element-users"> 
+      <%if (messages.error) { %>
+         <% messages.error %>
+         <% } %>
+         <h2 style="text-align: center; margin: 0; color: red; font-weight: bold;">Admin Panel</h2>
+         <h5 style="text-align: center; margin: 0;">Please note all admin actions are logged accordingly</h5>
+         <hr class="black">
+      <div class="card" style="width: 850px;">
+         <p style="text-align: center; margin: 0;">You are accessing the panel through the account <b><%= name %></b>, By agreeing to this you achknowledge that 
+            you are responsible for any actions permitted within this panel, and become liable against any actions against abuse of power or computer misuse. 
+            If you disagree or want to exit this menu then you can <a href="/index">return home</a>.</p>
+            <hr>
+            <h3 style="text-align: center; margin: 0; color: red; font-weight: bold;">User Logs</h3>
+            <br>
+            <a href="/admin">
+               <button class="singlebutton btn btn-primary" style="width: 300px; margin: 0;">Go Home</button>
+            </a>
+            <br>
+            <form action="/logout?_method=DELETE" method="POST">
+              <button class="singlebutton btn btn-primary" style="width: 300px; margin: 0; background-color: red; border-color: red;" type="submit">Sign Out</button>
+          </form>
+   </div>
+   </div>
+   <div class="center" style="padding-top: 650px">
+   <table class="table table-striped table-dark" style="width: 1400px; padding-left: 250px;">
+    <thead class="thead-dark">
+      <tr>
+        <th scope="col">Log Type</th>
+        <th scope="col">Username</th>
+        <th scope="col">Email Address</th>
+        <th scope="col">Log Timestamp</th>
+        <th scope="col">IP</th>
+        <th scope="col">Additional Information</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <% data.forEach(entry => { %>
+          <% if (entry.type == 'ADMIN-ACCESS') { %>
+            <td style="color: red;"><%= entry.type %></td> %>
+            <%} else { %>
+              <td><%= entry.type %></td> %>
+            <% } %>
+
+          <td><%= entry.username %></td>
+          <td><%= entry.email %></td>
+          <td><%= entry.timestamp %></td>
+          <td><%= entry.ip %></td>
+          <td><%= entry.additional_info %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+    </table>
+  </div>
+</body>

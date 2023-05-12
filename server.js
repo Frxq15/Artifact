@@ -172,7 +172,25 @@ app.get('/admin', isAuthenticated, (req, res) => {
       res.redirect('page-not-found')
       return;
    }
-   res.render('admin.ejs')
+   res.render('admin.ejs', {
+      name: req.user.username
+   })
+})
+app.get('/logs', isAuthenticated, (req, res) => {
+   if(!isAdmin(req)) {
+      res.redirect('page-not-found')
+      return;
+   }//
+   connection.query('SELECT * FROM logs ORDER by timestamp DESC', function (err, result) {
+      if (err) throw err;
+
+      ///res.render() function
+      res.render('logs.ejs', {
+         data: result,
+         name: req.user.username
+      });
+      createLog(req, 'ADMIN-ACCESS', 'Admin viewed logs page.')
+    });
 })
 app.get('/user-confirm', isAuthenticated, secondAuthConfirmed, (req, res) => {
    res.render('user-confirm.ejs', {
