@@ -16,8 +16,6 @@ var requestIp = require('request-ip');
 var messagebird = require('messagebird')(process.env.MESSAGE_BIRD_API_KEY)
 var alert = require('alert');
 var expresshbs = require('express-handlebars');
-const Recaptcha = require('express-recaptcha').RecaptchaV3;
-const recaptcha = new Recaptcha('6LeG6AwmAAAAANf4m6Xo1N9PoqBvzQqcBKHgkvNQ', '6LeG6AwmAAAAANMHKUsHoz38Iio9eX7I4mZT4bVy');
 
 const transporter = nodemailer.createTransport({
    service: 'Gmail',
@@ -194,22 +192,6 @@ app.get('/logs', isAuthenticated, (req, res) => {
       createLog(req, 'ADMIN-ACCESS', 'Admin viewed logs page.')
     });
 })
-app.get('/users', isAuthenticated, (req, res) => {
-   if(!isAdmin(req)) {
-      res.redirect('page-not-found')
-      return;
-   }//
-   connection.query('SELECT username,email,registered,last_login,last_login_ip,second_auth,admin,account_status FROM users ORDER by username', function (err, result) {
-      if (err) throw err;
-
-      ///res.render() function
-      res.render('users.ejs', {
-         data: result,
-         name: req.user.username
-      });
-      createLog(req, 'ADMIN-ACCESS', 'Admin viewed user-management page.')
-    });
-})
 app.get('/user-confirm', isAuthenticated, secondAuthConfirmed, (req, res) => {
    res.render('user-confirm.ejs', {
       name: req.user.username,
@@ -248,6 +230,9 @@ app.get('/index', isAuthenticated, (req, res) => {
       registered: formatted,
       ip: requestIp.getClientIp(req)
    })
+   var currentTime = new Date();
+   editUserDetails(req.user.name, 'last_login', currentTime)
+   editUserDetails(req.user.name, 'last_login_ip', requestIp.getClientIp(req))
    createLog(req, 'USER-LOGIN', 'User logged in successfully.')
 })
 app.get('/user-found', notAuthenticated, (req, res) => {
@@ -287,19 +272,13 @@ app.post("/change-password", async (req, res) => {
   });
 });
 
-app.post('/login', notAuthenticated, recaptcha.middleware.verify, (req, res) => {
-   console.log(req.recaptcha)
-   if (req.recaptcha.error) {
-      console.log("Recaptcha error: " + req.recaptcha.error)
-      res.redirect("/");
-      return;
-   }
-   passport.authenticate('local',  {
+
+app.post('/login', notAuthenticated, passport.authenticate('local', {
    successRedirect: '/index',
    failureRedirect: '/user-not-found',
-   failureFlash: true,
+   failureFlash: true
 })
-})
+)
 
 app.post('/register', async (req, res, next) => {
    var currentTime = new Date();
@@ -314,7 +293,7 @@ app.post('/register', async (req, res, next) => {
    const password = await genPassword(req.body.password);
    let query = `INSERT into users (email, username, hash, salt, registered, last_login, last_login_ip, second_auth, second_auth_confirmed, admin, account_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?,?);`
    try {
-      connection.query(query, [req.body.email, req.body.username, password.hash, password.salt, currentTime, null, requestIp.getClientIp(req), 0, 0, 0, 'Registered']), (e) => {
+      connection.query(query, [req.body.email, req.body.username, password.hash, password.salt, currentTime, null, requestIp.getClientIp(req), 1, 0, 0, 'Registered']), (e) => {
          if (e) throw e
          console.log(e)
       }
@@ -445,36 +424,6 @@ async function getUserDetails(username) {
          }
 
 
-      function deleteUser(username) {
-         console.log('deleteUser', username)
-         try {
-            console.log(username)
-             let query = "DELETE from users WHERE username=?"
-             connection.query(query, [username], (e) => {
-                if (e) {
-                   return console.error(e);
-                }
-                console.log('deleted '+username)
-             });
-          } catch (e) {
-             console.log(e);
-          }
-      }
-      app.get('/users/delete/:username', function(req, res, next) {
-         console.log('params '+req.params.username)
-         if(req.user.username == req.params.username) {
-            res.redirect('/users')
-            return;
-         }
-         if(getUserDetails(req.params.username).admin) {
-            res.redirect('/users')
-            return;
-         }
-         deleteUser(req.params.username)
-         createLog2(req.user.username, getUserDetails(req.user.username).email, getUserDetails(username).last_login_ip, 'USER-DELETE', 'Deleted the user '+req.params.username)
-         res.redirect('/users')
-      })
-
       async function userExists(type, data) {
          return new Promise((resolve, reject) => {
             let query = "SELECT " + type + " FROM users WHERE " + type + "=?"
@@ -488,12 +437,55 @@ async function getUserDetails(username) {
             });
          });
       }
+      app.get('/users', isAuthenticated, (req, res) => {
+         if(!isAdmin(req)) {
+            res.redirect('page-not-found')
+            return;
+         }//
+         connection.query('SELECT username,email,registered,last_login,last_login_ip,second_auth,admin,account_status FROM users ORDER by username', function (err, result) {
+            if (err) throw err;
+      
+            ///res.render() function
+            res.render('users.ejs', {
+               data: result,
+               name: req.user.username
+            });
+            createLog(req, 'ADMIN-ACCESS', 'Admin viewed user-management page.')
+          });
+      })
+           function deleteUser(username) {
+               console.log('deleteUser', username)
+               try {
+                  console.log(username)
+                   let query = "DELETE from users WHERE username=?"
+                   connection.query(query, [username], (e) => {
+                      if (e) {
+                         return console.error(e);
+                      }
+                      console.log('deleted '+username)
+                   });
+                } catch (e) {
+                   console.log(e);
+                }
+            }
+            app.get('/users/delete/:username', function(req, res, next) {
+               console.log('params '+req.params.username)
+               if(req.user.username == req.params.username) {
+                  res.redirect('/users')
+                  return;
+               }
+               if(getUserDetails(req.params.username).admin) {
+                  res.redirect('/users')
+                  return;
+               }
+               deleteUser(req.params.username)
+               createLog2(req.user.username, getUserDetails(req.user.username).email, getUserDetails(username).last_login_ip, 'USER-DELETE', 'Deleted the user '+req.params.username)
+               res.redirect('/users')
+            })
    
-
-      //404 IS RIGHT HERE
-app.get('*', function(req, res){
-   res.status(404).render('page-not-found.ejs');
- });
+      app.get('*', function(req, res){
+         res.status(404).render('page-not-found.ejs');
+       });
 
 function initialize() {
    let port = 5000;

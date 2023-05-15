@@ -5,7 +5,7 @@
    <div class="element">
       <h1 style="text-align: center; color: white;">Sign Up</h1>
       <hr class="black" style="width: 225px;">
-      <div class="card">
+      <div class="card" style="height: 415px;">
          <form action="/register" method="POST">
             <div>
                <label for="name">Username</label>
@@ -25,6 +25,13 @@
                   title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters"  placeholder="Password" required>
             </div>
             <hr class="black">
+            <div>
+               <p style="text-align: center; font-size: small;"><i class="fa fa-android" aria-hidden="true"></i> Please confirm you're not a robot.</p>
+               <div class="center3">
+                  <input style="vertical-align: middle;" id="verify" type="checkbox" title="Please confirm you're not a robot." required>
+               </div>
+            </div>
+            <br>
             <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Register</button>
          </form>
          <div style="text-align: center; margin: 0;">
