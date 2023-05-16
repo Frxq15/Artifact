@@ -13,9 +13,6 @@ const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
-var messagebird = require('messagebird')(process.env.MESSAGE_BIRD_API_KEY)
-var alert = require('alert');
-var expresshbs = require('express-handlebars');
 
 const transporter = nodemailer.createTransport({
    service: 'Gmail',
@@ -226,13 +223,14 @@ app.get('/index', isAuthenticated, (req, res) => {
    res.render('index.ejs', {
       name: req.user.username,
       email: req.user.email,
+      admin: req.user.admin,
       second_auth: SA,
       registered: formatted,
       ip: requestIp.getClientIp(req)
    })
    var currentTime = new Date();
-   editUserDetails(req.user.name, 'last_login', currentTime)
-   editUserDetails(req.user.name, 'last_login_ip', requestIp.getClientIp(req))
+   //editUserDetails(req.user.name, 'last_login', currentTime)
+   //editUserDetails(req.user.name, 'last_login_ip', requestIp.getClientIp(req))
    createLog(req, 'USER-LOGIN', 'User logged in successfully.')
 })
 app.get('/user-found', notAuthenticated, (req, res) => {
