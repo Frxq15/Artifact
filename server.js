@@ -217,7 +217,7 @@ app.get('/logs', isAuthenticated, (req, res) => {
 })
 
 function clear2fa() {
-    SAusers.clear()
+    SAcodes.clear()
 }
 
 app.get('/user-confirm', isAuthenticated, secondAuthConfirmed, (req, res) => {
