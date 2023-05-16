@@ -13,14 +13,16 @@ const crypto = require('crypto');
 var LocalStrategy = require('passport-local');
 const methodOverride = require('method-override')
 var requestIp = require('request-ip');
+const sendgridTransport = require('nodemailer-sendgrid-transport');
 
-const transporter = nodemailer.createTransport({
-   service: 'Gmail',
-   auth: {
-     user: process.env.GMAIL_EMAIL,
-     pass: process.env.GMAIL_PASS
-   }
- });
+const transporter = nodemailer.createTransport(
+   sendgridTransport({
+     auth: {
+       api_key: process.env.SENDGRID_API_KEY,
+     },
+   })
+ );
+  
 
 initialize()
 app.use(express.static(__dirname+'/public'));
@@ -50,6 +52,10 @@ const connection = mysql.createConnection({
    password: process.env.SQL_password,
    database: process.env.SQL_DB
 });
+
+const SAcodes = new Map();
+//reset 2fa every 10 mins
+setInterval(clear2fa, 600000);
 
 connection.connect(function (error) {
    if (error) {
@@ -108,6 +114,14 @@ async function createLog2(user, email, ip, type, misc) {
          }
 }
 
+function generateRandomNumber() {
+   var minm = 100000;
+   var maxm = 999999;
+   return Math.floor(Math
+   .random() * (maxm - minm + 1)) + minm;
+}
+
+
 passport.use(new LocalStrategy (async function verify(username, password, cb) {
   const usernameExists = await userExists('username', username);
   if (!usernameExists) {
@@ -133,6 +147,7 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
             message: 'Incorrect username or password.'
          });
       }
+      let code = generateRandomNumber();
       user = {
          id: results[0].id,
          email: results[0].email,
@@ -143,8 +158,10 @@ passport.use(new LocalStrategy (async function verify(username, password, cb) {
          last_login_ip: results[0].last_login_ip,
          admin: results[0].admin,
          account_status: results[0].account_status,
-         second_auth_confirmed: results[0].second_auth_confirmed
+         second_auth_confirmed: results[0].second_auth_confirmed,
       };
+      SAcodes.set(user.username, code)
+      console.log(user.second_auth_code + ' 2fa code')
       return cb(null, user);
    });
 }));
@@ -189,19 +206,38 @@ app.get('/logs', isAuthenticated, (req, res) => {
       createLog(req, 'ADMIN-ACCESS', 'Admin viewed logs page.')
     });
 })
+
+function clear2fa() {
+   SAusers.clear()
+}
+
 app.get('/user-confirm', isAuthenticated, secondAuthConfirmed, (req, res) => {
    res.render('user-confirm.ejs', {
       name: req.user.username,
       email: req.user.email
    })
-   transporter.sendMail(send2fa(req.user.email), function(error, info){
+   const usercode = SAcodes.get(req.user.username)
+   console.log('code = ' +usercode);
+   if(SAcodes.has(req.user.username)) {
+      return;
+   }
+   transporter.sendMail(send2fa(req.user.email, usercode), function(error){
       if (error) {
         console.log(error);
       } else {
-        console.log('Email sent: ' + info.response);
+        console.log('Email sent to: ' + req.user.email + ' Code: '+usercode);
       }
     });
 })
+
+function send2fa(email, code) {
+   return mailOptions = {
+     from: 'cxrtwrightdan15@gmail.com',
+     to: email,
+     subject: 'Artifact - Your 2FA code',
+     text: 'Beep Bop! Your 2FA code has arrived!\nPlease enter '+code+' to confirm your login request for Artifact. \n\nIf you did not request this code, please reset your password immediately.'
+   };
+  }
 app.get('/index', isAuthenticated, (req, res) => {
    var dateFormat = new Date(req.user.registered);
    var formatted = dateFormat.toLocaleDateString("en-US");
@@ -229,8 +265,8 @@ app.get('/index', isAuthenticated, (req, res) => {
       ip: requestIp.getClientIp(req)
    })
    var currentTime = new Date();
-   //editUserDetails(req.user.name, 'last_login', currentTime)
-   //editUserDetails(req.user.name, 'last_login_ip', requestIp.getClientIp(req))
+   editUserDetails(req.user.username, 'last_login', currentTime)
+   editUserDetails(req.user.username, 'last_login_ip', requestIp.getClientIp(req))
    createLog(req, 'USER-LOGIN', 'User logged in successfully.')
 })
 app.get('/user-found', notAuthenticated, (req, res) => {
@@ -240,10 +276,16 @@ app.get('/user-not-found', notAuthenticated, (req, res) => {
    res.render('user-not-found.ejs')
 })
 app.post('/user-confirm', isAuthenticated, secondAuthConfirmed, async (req, res) => {
+   if(req.body.code != SAcodes.get(req.user.username)) {
+      res.redirect('/user-confirm')
+      return;
+   }
+   console.log('code entered: '+req.body.code + ' Correct Code: ' + SAcodes.get(req.user.username))
    console.log('user-confirm posted for: ', req.user.username)
    await editUserDetails(req.user.username, 'second_auth_confirmed', true)
    res.redirect('/index')
    console.log('redirected to /index')
+   SAusers.delete(req.user.username)
 })
 app.post("/logout", async (req, res) => {
    await editUserDetails(req.user.username, 'second_auth_confirmed', false)
@@ -387,14 +429,6 @@ async function genPassword(password)
     return {salt:salt,hash:genhash};
 }
 
- function send2fa(email) {
- return mailOptions = {
-   from: 'cxrtwrightdan15@gmail.com',
-   to: email,
-   subject: 'Your 2FA code',
-   text: `Your 2FA code is: 200`
- };
-}
 
 async function getUserDetails(username) {
    return new Promise((resolve, reject) => {
