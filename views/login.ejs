@@ -6,31 +6,31 @@
    <div class="element">
       <h1 style="text-align: center; color: white;">Sign In</h1>
       <%if (messages.error) { %>
-         <% messages.error %>
-         <% } %>
+      <% messages.error %>
+      <% } %>
       <hr class="black">
       <div class="card" style="height: 360px;">
-      <form action="/login" method="POST">
-         <div>
-            <label for="name">Username</label>
-            <input type="text" id="name" name="username" placeholder="Username" required>
-         </div>
-         <div>
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="Password" required>
-         </div>
-         <hr class="black">
-         <div>
-            <p style="text-align: center; font-size: small;"><i class="fa fa-android" aria-hidden="true"></i> Please confirm you're not a robot.</p>
-            <div class="center3">
-               <input style="vertical-align: middle;" id="verify" type="checkbox" title="Please confirm you're not a robot." required>
+         <form action="/login" method="POST">
+            <div>
+               <label for="name">Username</label>
+               <input type="text" id="name" name="username" placeholder="Username" required>
             </div>
-         </div>
-         <br>
-         <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Login</button>
-      </form>
-      <a style="text-align: center; margin: 0;" href="/register">Sign Up</a>
-   </div>
-   <br>
+            <div>
+               <label for="password">Password</label>
+               <input type="password" id="password" name="password" placeholder="Password" required>
+            </div>
+            <hr class="black">
+            <div>
+               <p style="text-align: center; font-size: small;"><i class="fa fa-android" aria-hidden="true"></i> Please confirm you're not a robot.</p>
+               <div class="center3">
+                  <input style="vertical-align: middle;" id="verify" type="checkbox" title="Please confirm you're not a robot." required>
+               </div>
+            </div>
+            <br>
+            <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Login</button>
+         </form>
+         <a style="text-align: center; margin: 0;" href="/register">Sign Up</a>
+      </div>
+      <br>
    </div>
 </body>

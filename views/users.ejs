@@ -53,9 +53,9 @@
             <tr>
                <% data.forEach(entry => { %>
                <td>
-                <a href="/users/delete/<%= entry.username %>">
+                  <a href="/users/delete/<%= entry.username %>">
                   <button class="singlebutton btn btn-primary" style="width: 50px; margin: 0; background-color: red; border-color: red;" title="Delete User"><i class="fa fa-trash"></i></button>
-              </a>
+                  </a>
                </td>
                <% if (entry.admin == 1) { %>
                <td style="color: red;"><%= entry.username %></td>

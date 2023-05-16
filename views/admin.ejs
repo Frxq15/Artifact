@@ -8,25 +8,26 @@
 <body class="background">
    <div class="element-users">
       <%if (messages.error) { %>
-         <% messages.error %>
-         <% } %>
-         <h2 style="text-align: center; margin: 0; color: red; font-weight: bold;">Admin Panel</h2>
-         <h5 style="text-align: center; margin: 0;">Please note all admin actions are logged accordingly</h5>
-         <hr class="black">
+      <% messages.error %>
+      <% } %>
+      <h2 style="text-align: center; margin: 0; color: red; font-weight: bold;">Admin Panel</h2>
+      <h5 style="text-align: center; margin: 0;">Please note all admin actions are logged accordingly</h5>
+      <hr class="black">
       <div class="card" style="height: 350px; width: 850px;">
          <p style="text-align: center; margin: 0;">You are accessing the panel through the account <b><%= name %></b>, By agreeing to this you achknowledge that 
             you are responsible for any actions permitted within this panel, and become liable against any actions against abuse of power or computer misuse. 
-            If you disagree or want to exit this menu then you can <a href="/index">return home</a>.</p>
-            <hr>
+            If you disagree or want to exit this menu then you can <a href="/index">return home</a>.
+         </p>
+         <hr>
          <h3 style="text-align: center; margin: 0; color: red; font-weight: bold;">Available Utilities</h3>
          <div style="text-align: center; margin: auto;">
             <a href="/users">
-               <button class="singlebutton btn btn-primary" style="width: 300px; margin: 0;">View Registered Users</button>
+            <button class="singlebutton btn btn-primary" style="width: 300px; margin: 0;">View Registered Users</button>
             </a>
             <a href="/logs">
-               <button class="singlebutton btn btn-primary" style="width: 300px; margin: 0;">View Logs</button>
+            <button class="singlebutton btn btn-primary" style="width: 300px; margin: 0;">View Logs</button>
             </a>
          </div>
+      </div>
    </div>
-   </div>  
 </body>

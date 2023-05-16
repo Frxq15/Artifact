@@ -1,88 +1,88 @@
 .center {
-    max-width: 1000px;
-    text-align: center;
-    padding-top: 150px;
-    margin: auto;
-    height: 900px;
-  }
-  .center2 {
-    max-width: 1000px;
-    text-align: center;
-    padding-top: 20px;
-    margin: auto;
-    height: 10px;
-  }
-  .center3 {
-    max-width: 1000px;
-    text-align: center;
-    padding-top: 0px;
-    margin: auto;
-    height: 10px;
-  }
-  .element {
-    position: absolute;
-    top: 30%;
-    left: 50%;
-    width: 200px;
-    height: 200px;
-    margin: -200px 0 0 -100px;
-  }
-  .element2 {
-    position: absolute;
-    top: 30%;
-    left: 50%;
-    width: 300px;
-    height: 200px;
-    margin: -200px 0 0 -100px;
-  }
-  .element-users {
-    position: absolute;
-    top: 30%;
-    left: 50%;
-    width: 850px;
-    height: 850px;
-    margin: -200px 0 0 -350px;
-  }
+  max-width: 1000px;
+  text-align: center;
+  padding-top: 150px;
+  margin: auto;
+  height: 900px;
+}
+.center2 {
+  max-width: 1000px;
+  text-align: center;
+  padding-top: 20px;
+  margin: auto;
+  height: 10px;
+}
+.center3 {
+  max-width: 1000px;
+  text-align: center;
+  padding-top: 0px;
+  margin: auto;
+  height: 10px;
+}
+.element {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  margin: -200px 0 0 -100px;
+}
+.element2 {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  width: 300px;
+  height: 200px;
+  margin: -200px 0 0 -100px;
+}
+.element-users {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  width: 850px;
+  height: 850px;
+  margin: -200px 0 0 -350px;
+}
 .black {
-    color: black;
+  color: black;
 }
 .container {
-    background-color: #f1f1f1;
-    width: 300px;
-    height: 300px;
-    padding-top: 30px;
-  }
-  .form {border: 3px solid #f1f1f1;}
-
-  .icon {
-    padding: 10px;
-    background: dodgerblue;
-    color: white;
-  }
-  .box {
-    width: 320px;
-    padding: 10px;
-    border: 5px solid gray;
-    margin: 0;
-  }
-
-.background {
-    background-size: cover;
-    background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxleHBsb3JlLWZlZWR8MXx8fGVufDB8fHx8&w=1000&q=80');
+  background-color: #f1f1f1;
+  width: 300px;
+  height: 300px;
+  padding-top: 30px;
 }
-  input:valid { 
-    border:solid black;
-    border-width: 1px;
-    }
+.form {
+ border: 3px solid #f1f1f1;
+}
+.icon {
+  padding: 10px;
+  background: dodgerblue;
+  color: white;
+}
+.box {
+  width: 320px;
+  padding: 10px;
+  border: 5px solid gray;
+  margin: 0;
+}
+.background {
+  background-size: cover;
+  background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxleHBsb3JlLWZlZWR8MXx8fGVufDB8fHx8&w=1000&q=80');
+}
+input:valid {
+  border:solid black;
+  border-width: 1px;
+}
 .card {
-    width: 225px;
-    height: 325px;
-    padding: 10px;
-    outline-color: black;
+  width: 225px;
+  height: 325px;
+  padding: 10px;
+  outline-color: black;
 }
 .card-users {
-    width: 725px;
-    height: 725px;
-    padding: 10px;
-    outline-color: black;
+  width: 725px;
+  height: 725px;
+  padding: 10px;
+  outline-color: black;
 }

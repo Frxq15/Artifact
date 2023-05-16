@@ -7,26 +7,30 @@
 <link rel="shortcut icon" type="image/jpg" href="/public/icon.png"/>
 <body class="background">
    <div class="element">
-      <h2 style="text-align: center; color: white;">2-Factor</h2>
-      <h2 style="text-align: center; color: white; padding-left: -50px;">Authentication</h2>
-      <%if (messages.error) { %>
-         <% messages.error %>
-         <% } %>
-      <hr class="black" style="width: 235px;">
-      <div class="card" style="height: 315px;">
+   <h2 style="text-align: center; color: white;">2-Factor</h2>
+   <h2 style="text-align: center; color: white; padding-left: -50px;">Authentication</h2>
+   <%if (messages.error) { %>
+   <% messages.error %>
+   <% } %>
+   <hr class="black" style="width: 235px;">
+   <div class="card" style="height: 315px;">
       <form action="/user-confirm" method="POST">
          <div style="text-align: center; margin: 0;">
             <h4>Confirm Code</h4>
-         <div>
-            <label for="code">Enter your 2FA Code</label>
-            <input type="code" id="code" name="code" placeholder="2FA Code" required>
-         </div>
-         <hr class="black">
-         <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Confirm Code</button>
-         <p style="padding-top: 10px;">We've sent a code to</p>
-         <hr>
-         <p class="none"><i class="fa fa-envelope" style="margin: 0;"></i> <%= email %></p>
+            <div>
+               <label for="code">Enter your 2FA Code</label>
+               <input type="code" id="code" name="code" placeholder="2FA Code" required>
+            </div>
+            <hr class="black">
+            <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Confirm Code</button>
+            <p style="padding-top: 10px;">We've sent a code to</p>
+            <hr>
+            <p class="none"><i class="fa fa-envelope" style="margin: 0;"></i> <%= email %></p>
       </form>
+      <br>
+      <form action="/logout?_method=DELETE" method="POST">
+      <button class="singlebutton btn btn-primary" style="width: 150px; background-color: red; border-color: red;" type="submit">Cancel</button>
+      </form>
+      </div>
    </div>
-   </div>  
 </body>

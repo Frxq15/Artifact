@@ -2,35 +2,35 @@
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
 <link rel="stylesheet" href="styles.css">
 <body class="background">
-    <div class="center2">
-<h1 style="color: white;">You are now logged in.</h1>
-<form action="/logout?_method=DELETE" method="POST">
-    <button class="singlebutton btn btn-primary" style="width: 200px; background-color: red; border-color: red;" type="submit">Sign Out</button>
-</form>
-</div>
-<div class="center">
-<h2>Welcome <%= name %> from <%= ip %></h2>
-<hr style="width: 350px;">
-<h3>User Details:</h3>
-<h5>Username: <%= name %></h5>
-<h5>Email: <%= email %></h5>
-<h5>Date Registered: <%= registered %></h5>
-<hr style="width: 350px;">
-<h5>Change your password: </h5>
-<form action="/change-password" method="POST">
-    <div>
-        <input type="password" id="password" name="password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" 
-        title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters"  placeholder="********" required>
-     </div>
-     <br>
-    <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Confirm Change</button>
-</form>
-</div>
- <% if (admin == 1) { %>
-    <a href="/admin">
-        <button class="singlebutton btn btn-primary" style="width: 300px; background-color: red; border-color: red;">Admin Panel</button>
-     </a>
-    <%} else { %>
-    <div></div>
-    <% } %>
+   <div class="center2">
+      <h1 style="color: white;">You are now logged in.</h1>
+      <form action="/logout?_method=DELETE" method="POST">
+         <button class="singlebutton btn btn-primary" style="width: 200px; background-color: red; border-color: red;" type="submit">Sign Out</button>
+      </form>
+   </div>
+   <div class="center">
+      <h2>Welcome <%= name %> from <%= ip %></h2>
+      <hr style="width: 350px;">
+      <h3>User Details:</h3>
+      <h5>Username: <%= name %></h5>
+      <h5>Email: <%= email %></h5>
+      <h5>Date Registered: <%= registered %></h5>
+      <hr style="width: 350px;">
+      <h5>Change your password: </h5>
+      <form action="/change-password" method="POST">
+         <div>
+            <input type="password" id="password" name="password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" 
+               title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters"  placeholder="********" required>
+         </div>
+         <br>
+         <button class="singlebutton btn btn-primary" style="width: 200px;" type="submit">Confirm Change</button>
+      </form>
+   </div>
+   <% if (admin == 1) { %>
+   <a href="/admin">
+   <button class="singlebutton btn btn-primary" style="width: 300px; background-color: red; border-color: red;">Admin Panel</button>
+   </a>
+   <%} else { %>
+   <div></div>
+   <% } %>
 </body>
